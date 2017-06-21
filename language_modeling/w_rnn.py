@@ -30,18 +30,18 @@ def build_vocabulary(words):
 
 def create_rnn(seq, n_hidden):
     cell = tf.contrib.rnn.MultiRNNCell([tf.contrib.rnn.GRUCell(n_hidden) for _ in range(2)])
-    outputs, states = tf.contrib.rnn.static_rnn(cell, [seq], dtype=tf.float32)
-    return outputs, states
+    outputs, state = tf.contrib.rnn.static_rnn(cell, [seq], dtype=tf.float32)
+    return outputs, state
 
 
 def create_model(seq, temp, vocab_size, n_hidden=HIDDEN_SIZE):
-    outputs, states = create_rnn(seq, n_hidden)
+    outputs, state = create_rnn(seq, n_hidden)
     logits = tf.contrib.layers.fully_connected(outputs, vocab_size, None)
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=temp))
-    return loss, states
+    return loss, state
 
 
-def training(seq, temp, loss, states, optimizer, words, dictionary, reverse_dictionary, vocab_size):
+def training(seq, temp, loss, state, optimizer, words, dictionary, reverse_dictionary, vocab_size):
     init = tf.global_variables_initializer()
 
     with tf.Session() as sess:
@@ -73,9 +73,9 @@ def main():
     vocab_size = len(dictionary)
     x = tf.placeholder(shape=[None, NUM_STEPS], dtype=tf.float32)
     y = tf.placeholder(shape=[None, vocab_size], dtype=tf.float32)
-    loss, states = create_model(x, y, vocab_size)
+    loss, state = create_model(x, y, vocab_size)
     optimizer = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE).minimize(loss)
-    training(x, y, loss, states, optimizer, words, dictionary, reverse_dictionary, vocab_size)
+    training(x, y, loss, state, optimizer, words, dictionary, reverse_dictionary, vocab_size)
 
 
 if __name__ == '__main__':
