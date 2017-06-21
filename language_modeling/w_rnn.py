@@ -33,6 +33,7 @@ def create_rnn(seq, n_hidden):
     outputs, states = tf.contrib.rnn.static_rnn(cell, [seq], dtype=tf.float32)
     return outputs, states
 
+
 def create_model(seq, temp, vocab_size, n_hidden=HIDDEN_SIZE):
     outputs, states = create_rnn(seq, n_hidden)
     logits = tf.contrib.layers.fully_connected(outputs, vocab_size, None)
@@ -58,9 +59,9 @@ def training(seq, temp, loss, states, optimizer, words, dictionary, reverse_dict
             symbols_out_onehot[dictionary[words[offset + NUM_STEPS]]] = 1.0
             symbols_out_onehot = np.reshape(symbols_out_onehot, [1, -1])
 
-            _, batch_loss = sess.run([optimizer, loss], feed_dict={seq: symbols_in_keys, temp:symbols_out_onehot})
+            _, batch_loss = sess.run([optimizer, loss], feed_dict={seq: symbols_in_keys, temp: symbols_out_onehot})
             loss_total += batch_loss
-            if (step + 1) %  SKIP_STEP == 0:
+            if (step + 1) % SKIP_STEP == 0:
                 print('Iter= {}, Average Loss= {:.6f}'.format(step + 1, loss_total / SKIP_STEP))
                 loss_total = 0
             offset += NUM_STEPS + 1
