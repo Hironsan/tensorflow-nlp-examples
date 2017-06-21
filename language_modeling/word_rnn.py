@@ -65,7 +65,7 @@ def RNN(x, weights, biases):
 
     # 2-layer LSTM, each layer has n_hidden units.
     # Average Accuracy= 95.20% at 50k iter
-    rnn_cell = rnn.MultiRNNCell([rnn.BasicLSTMCell(n_hidden),rnn.BasicLSTMCell(n_hidden)])
+    rnn_cell = rnn.MultiRNNCell([rnn.BasicLSTMCell(n_hidden), rnn.BasicLSTMCell(n_hidden)])
 
     # 1-layer LSTM with n_hidden units but with lower accuracy.
     # Average Accuracy= 90.60% 50k iter
