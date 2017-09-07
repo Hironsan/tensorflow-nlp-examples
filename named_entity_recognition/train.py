@@ -43,17 +43,25 @@ class Trainer(object):
         train_op = self.get_train_op()
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
-
             for epoch in range(self.training_config.max_epoch):
                 self.training_config.learning_rate *= self.training_config.lr_decay
-                for i, (data, labels) in enumerate(train_batches):
-                    if i == train_steps:
-                        break
-                    fd, _ = self.get_feed_dict(data, labels,
-                                               self.training_config.learning_rate,
-                                               self.training_config.dropout,
-                                               train_phase=True)
-                    _, train_loss = sess.run([train_op, self.model.loss], feed_dict=fd)
+                self.run_epoch(train_steps, train_batches, train_op, sess)
+                self.validate(valid_steps, valid_batches, sess)
+
+    def run_epoch(self, train_steps, train_batches, train_op, sess):
+        for i in range(train_steps):
+            data, labels = next(train_batches)
+            fd, _ = self.get_feed_dict(data, labels,
+                                       self.training_config.learning_rate,
+                                       self.training_config.dropout,
+                                       train_phase=True)
+            _, train_loss = sess.run([train_op, self.model.loss], feed_dict=fd)
+
+    def validate(self, valid_steps, valid_batches, sess):
+        for i in range(valid_steps):
+            data, labels = next(valid_batches)
+            fd, sequence_lengths = self.get_feed_dict(data, dropout=1.0)
+            output = sess.run([self.model.output], feed_dict=fd)
 
     def get_feed_dict(self, data, labels=None, lr=None, dropout=None, train_phase=False):
         """

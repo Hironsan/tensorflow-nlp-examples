@@ -24,6 +24,8 @@ class NERModel(object):
         self.labels           = labels
         self.dropout          = dropout
         self.train_phase      = train_phase
+        self.transition_params = tf.get_variable(name='transition',
+                                                 shape=[self.config.num_tags, self.config.num_tags])
 
     def add_word_embeddings_op(self):
         """
@@ -92,20 +94,11 @@ class NERModel(object):
             output = tf.reshape(output, [-1, 2 * self.config.num_word_lstm_units])
             pred = tf.matmul(output, W) + b
             self.logits = tf.reshape(pred, [-1, ntime_steps, self.config.num_tags])
-            # if training phrase, output self.logits, elif output decoded info.
-            # Decide phase by placeholder.
-            """
-            self.output = tf.cond(self.train_phase,
-                                  lambda: self.logits,
-                                  lambda: crf_decode(self.logits, self.transition_params, self.sequence_lengths))
-            """
 
-    def add_pred_op(self):
-        """
-        Adds labels_pred to self
-        """
-        if not self.config.crf:
-            self.labels_pred = tf.cast(tf.argmax(self.logits, axis=-1), tf.int32)
+            if self.config.crf:
+                self.output = crf_decode(self.logits, self.transition_params, self.sequence_lengths)
+            else:
+                self.output = tf.cast(tf.argmax(self.logits, axis=-1), tf.int32)
 
     def add_loss_op(self):
         """
@@ -113,7 +106,7 @@ class NERModel(object):
         """
         if self.config.crf:
             log_likelihood, self.transition_params = tf.contrib.crf.crf_log_likelihood(
-            self.logits, self.labels, self.sequence_lengths)
+                self.logits, self.labels, self.sequence_lengths)
             self.loss = tf.reduce_mean(-log_likelihood)
         else:
             losses = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.logits, labels=self.labels)
@@ -127,35 +120,4 @@ class NERModel(object):
     def build(self):
         self.add_word_embeddings_op()
         self.add_logits_op()
-        self.add_pred_op()
         self.add_loss_op()
-
-    def predict_batch(self, sess, words):
-        """
-        Args:
-            sess: a tensorflow session
-            words: list of sentences
-        Returns:
-            labels_pred: list of labels for each sentence
-            sequence_length
-        """
-        # get the feed dictionnary
-        fd, sequence_lengths = self.get_feed_dict(words, dropout=1.0)
-
-        if self.config.crf:
-            viterbi_sequences = []
-            logits, transition_params = sess.run([self.logits, self.transition_params], feed_dict=fd)
-            # iterate over the sentences
-            for logit, sequence_length in zip(logits, sequence_lengths):
-                # keep only the valid time steps
-                logit = logit[:sequence_length]
-                viterbi_sequence, viterbi_score = tf.contrib.crf.viterbi_decode(logit, transition_params)
-                viterbi_sequences += [viterbi_sequence]
-
-            return viterbi_sequences, sequence_lengths
-
-        else:
-            labels_pred = sess.run(self.labels_pred, feed_dict=fd)
-
-            return labels_pred, sequence_lengths
-
