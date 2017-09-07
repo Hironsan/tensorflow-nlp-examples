@@ -1,5 +1,9 @@
 import tensorflow as tf
 
+import tqdm
+
+from .eval import f1_score
+
 
 class Trainer(object):
 
@@ -10,7 +14,8 @@ class Trainer(object):
                  checkpoint_path='',
                  save_path='',
                  tensorboard=True,
-                 embeddings=None
+                 embeddings=None,
+                 preprocessor=None
                  ):
 
         self.model_config = model_config
@@ -18,6 +23,7 @@ class Trainer(object):
         self.checkpoint_path = checkpoint_path
         self.save_path = save_path
         self.tensorboard = tensorboard
+        self.p = preprocessor
 
         self.word_ids = tf.placeholder(tf.int32, shape=[None, None], name='word_ids')
         self.sequence_lengths = tf.placeholder(tf.int32, shape=[None], name='sequence_lengths')
@@ -26,7 +32,6 @@ class Trainer(object):
         self.labels = tf.placeholder(tf.int32, shape=[None, None], name='labels')
         self.dropout = tf.placeholder(dtype=tf.float32, shape=[], name='dropout')
         self.lr = tf.placeholder(dtype=tf.float32, shape=[], name='lr')
-        self.train_phase = tf.placeholder(tf.bool, [])
 
         self.model = model(model_config,
                            embeddings,
@@ -35,8 +40,7 @@ class Trainer(object):
                            self.char_ids,
                            self.word_lengths,
                            self.labels,
-                           self.dropout,
-                           self.train_phase)
+                           self.dropout)
         self.model.build()
 
     def train(self, train_steps, train_batches, valid_steps=None, valid_batches=None):
@@ -44,26 +48,36 @@ class Trainer(object):
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             for epoch in range(self.training_config.max_epoch):
+                print('Epoch {}/{}'.format(epoch + 1, self.training_config.max_epoch))
                 self.training_config.learning_rate *= self.training_config.lr_decay
                 self.run_epoch(train_steps, train_batches, train_op, sess)
                 self.validate(valid_steps, valid_batches, sess)
 
     def run_epoch(self, train_steps, train_batches, train_op, sess):
-        for i in range(train_steps):
+        for i in tqdm.tqdm(range(train_steps)):
             data, labels = next(train_batches)
             fd, _ = self.get_feed_dict(data, labels,
                                        self.training_config.learning_rate,
-                                       self.training_config.dropout,
-                                       train_phase=True)
+                                       self.training_config.dropout)
             _, train_loss = sess.run([train_op, self.model.loss], feed_dict=fd)
 
     def validate(self, valid_steps, valid_batches, sess):
+        y_trues, y_preds = [], []
+        seq_lengths = []
         for i in range(valid_steps):
-            data, labels = next(valid_batches)
+            data, y_true = next(valid_batches)
             fd, sequence_lengths = self.get_feed_dict(data, dropout=1.0)
-            output = sess.run([self.model.output], feed_dict=fd)
+            y_pred = sess.run([self.model.output], feed_dict=fd)
+            y_pred = y_pred[0]
+            y_true = [self.p.inverse_transform(y[:l]) for y, l in zip(y_true, sequence_lengths)]
+            y_pred = [self.p.inverse_transform(y[:l]) for y, l in zip(y_pred, sequence_lengths)]
+            y_trues.extend(y_true)
+            y_preds.extend(y_pred)
+            seq_lengths.extend(sequence_lengths)
+        f1 = f1_score(y_trues, y_preds, seq_lengths)
+        print(' - f1: {:04.2f}'.format(f1 * 100))
 
-    def get_feed_dict(self, data, labels=None, lr=None, dropout=None, train_phase=False):
+    def get_feed_dict(self, data, labels=None, lr=None, dropout=None):
         """
         Builds a feed dictionary.
         """
@@ -87,8 +101,6 @@ class Trainer(object):
 
         if dropout:
             feed[self.dropout] = dropout
-
-        feed[self.train_phase] = train_phase
 
         return feed, sequence_lengths
 

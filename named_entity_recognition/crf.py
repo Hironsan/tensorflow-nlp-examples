@@ -1,5 +1,3 @@
-import tensorflow as tf
-
 try:
     from tensorflow.contrib.crf import crf_decode
 except ImportError:

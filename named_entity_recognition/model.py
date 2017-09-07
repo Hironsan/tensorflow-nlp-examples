@@ -13,8 +13,7 @@ class NERModel(object):
                  char_ids,
                  word_lengths,
                  labels,
-                 dropout,
-                 train_phase):
+                 dropout):
         self.config           = config
         self.embeddings       = embeddings
         self.word_ids         = word_ids
@@ -23,7 +22,6 @@ class NERModel(object):
         self.word_lengths     = word_lengths
         self.labels           = labels
         self.dropout          = dropout
-        self.train_phase      = train_phase
         self.transition_params = tf.get_variable(name='transition',
                                                  shape=[self.config.num_tags, self.config.num_tags])
 
@@ -96,7 +94,7 @@ class NERModel(object):
             self.logits = tf.reshape(pred, [-1, ntime_steps, self.config.num_tags])
 
             if self.config.crf:
-                self.output = crf_decode(self.logits, self.transition_params, self.sequence_lengths)
+                self.output, _ = crf_decode(self.logits, self.transition_params, self.sequence_lengths)
             else:
                 self.output = tf.cast(tf.argmax(self.logits, axis=-1), tf.int32)
 

@@ -38,7 +38,8 @@ class TestTrainer(unittest.TestCase):
                           training_config,
                           checkpoint_path=LOG_ROOT,
                           save_path=SAVE_ROOT,
-                          embeddings=embeddings)
+                          embeddings=embeddings,
+                          preprocessor=p)
         trainer.train(train_steps, train_batches, valid_steps, valid_batches)
 
         p.save(os.path.join(SAVE_ROOT, 'preprocessor.pkl'))
