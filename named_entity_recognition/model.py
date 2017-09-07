@@ -13,7 +13,8 @@ class NERModel(object):
                  char_ids,
                  word_lengths,
                  labels,
-                 dropout):
+                 dropout,
+                 train_phase):
         self.config           = config
         self.embeddings       = embeddings
         self.word_ids         = word_ids
@@ -22,7 +23,7 @@ class NERModel(object):
         self.word_lengths     = word_lengths
         self.labels           = labels
         self.dropout          = dropout
-        # self.train_phase      = train_phase
+        self.train_phase      = train_phase
 
     def add_word_embeddings_op(self):
         """
@@ -91,18 +92,13 @@ class NERModel(object):
             output = tf.reshape(output, [-1, 2 * self.config.num_word_lstm_units])
             pred = tf.matmul(output, W) + b
             self.logits = tf.reshape(pred, [-1, ntime_steps, self.config.num_tags])
-            # if training phrase, output self.logits.
-            # if test phase, output decoded info.
+            # if training phrase, output self.logits, elif output decoded info.
             # Decide phase by placeholder.
-            # train_phase = tf.placeholder(tf.bool, [])
-            # feed_dict = {train_phase: False}
-            # r = tf.cond(train_phase, f1, f2)
             """
-            tf.cond(self.train_phase,
-                    lambda: self.logits,
-                    lambda: crf_decode(self.logits, self.transition_params, self.sequence_lengths))
+            self.output = tf.cond(self.train_phase,
+                                  lambda: self.logits,
+                                  lambda: crf_decode(self.logits, self.transition_params, self.sequence_lengths))
             """
-
 
     def add_pred_op(self):
         """

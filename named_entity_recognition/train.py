@@ -26,6 +26,7 @@ class Trainer(object):
         self.labels = tf.placeholder(tf.int32, shape=[None, None], name='labels')
         self.dropout = tf.placeholder(dtype=tf.float32, shape=[], name='dropout')
         self.lr = tf.placeholder(dtype=tf.float32, shape=[], name='lr')
+        self.train_phase = tf.placeholder(tf.bool, [])
 
         self.model = model(model_config,
                            embeddings,
@@ -34,7 +35,8 @@ class Trainer(object):
                            self.char_ids,
                            self.word_lengths,
                            self.labels,
-                           self.dropout)
+                           self.dropout,
+                           self.train_phase)
         self.model.build()
 
     def train(self, train_steps, train_batches, valid_steps=None, valid_batches=None):
@@ -49,10 +51,11 @@ class Trainer(object):
                         break
                     fd, _ = self.get_feed_dict(data, labels,
                                                self.training_config.learning_rate,
-                                               self.training_config.dropout)
+                                               self.training_config.dropout,
+                                               train_phase=True)
                     _, train_loss = sess.run([train_op, self.model.loss], feed_dict=fd)
 
-    def get_feed_dict(self, data, labels=None, lr=None, dropout=None):
+    def get_feed_dict(self, data, labels=None, lr=None, dropout=None, train_phase=False):
         """
         Builds a feed dictionary.
         """
@@ -76,6 +79,8 @@ class Trainer(object):
 
         if dropout:
             feed[self.dropout] = dropout
+
+        feed[self.train_phase] = train_phase
 
         return feed, sequence_lengths
 
