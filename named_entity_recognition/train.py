@@ -1,5 +1,4 @@
 import tensorflow as tf
-
 import tqdm
 
 from .eval import f1_score
@@ -44,6 +43,8 @@ class Trainer(object):
         self.model.build()
 
     def train(self, train_steps, train_batches, valid_steps=None, valid_batches=None):
+        best_score = 0.0
+        saver = tf.train.Saver()
         train_op = self.get_train_op()
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -52,7 +53,14 @@ class Trainer(object):
                 print('Epoch {}/{}'.format(epoch + 1, self.training_config.max_epoch))
                 self.training_config.learning_rate *= self.training_config.lr_decay
                 self.run_epoch(train_steps, train_batches, train_op, epoch, sess)
-                self.validate(valid_steps, valid_batches, sess)
+                f1 = self.validate(valid_steps, valid_batches, sess)
+                self.save(sess, saver, best_score, f1)
+                best_score = f1 if f1 >= best_score else best_score
+
+    def save(self, sess, saver, best_score, current_score):
+        if current_score >= best_score:
+            print(self.save_path)
+            saver.save(sess, self.save_path + self.training_config.model_name)
 
     def run_epoch(self, train_steps, train_batches, train_op, epoch, sess):
         for i in tqdm.tqdm(range(train_steps)):
@@ -81,6 +89,8 @@ class Trainer(object):
             seq_lengths.extend(sequence_lengths)
         f1 = f1_score(y_trues, y_preds, seq_lengths)
         print(' - f1: {:04.2f}'.format(f1 * 100))
+
+        return f1
 
     def get_feed_dict(self, data, labels=None, lr=None, dropout=None):
         """
@@ -113,7 +123,6 @@ class Trainer(object):
         """Gets train_op.
         """
         with tf.variable_scope('train_step'):
-            # sgd method
             if self.training_config.lr_method == 'adam':
                 optimizer = tf.train.AdamOptimizer(self.lr)
             elif self.training_config.lr_method == 'adagrad':
@@ -125,7 +134,7 @@ class Trainer(object):
             else:
                 raise NotImplementedError('Unknown train op {}'.format(self.training_config.lr_method))
 
-            # gradient clipping if config.clip_value is positive
+            # gradient clipping
             if self.training_config.clip_value > 0:
                 gradients, variables = zip(*optimizer.compute_gradients(self.model.loss))
                 gradients, global_norm = tf.clip_by_global_norm(gradients, self.training_config.clip_value)

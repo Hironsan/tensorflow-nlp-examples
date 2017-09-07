@@ -64,3 +64,6 @@ class TrainingConfig(object):
 
         # If < 1.0, the dropout keep probability applied to LSTM variables.
         self.dropout = 0.5
+
+        # File name for model
+        self.model_name = 'model.ckpt'
