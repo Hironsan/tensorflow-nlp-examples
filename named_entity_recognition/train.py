@@ -47,19 +47,24 @@ class Trainer(object):
         train_op = self.get_train_op()
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
+            self.add_summary(sess)
             for epoch in range(self.training_config.max_epoch):
                 print('Epoch {}/{}'.format(epoch + 1, self.training_config.max_epoch))
                 self.training_config.learning_rate *= self.training_config.lr_decay
-                self.run_epoch(train_steps, train_batches, train_op, sess)
+                self.run_epoch(train_steps, train_batches, train_op, epoch, sess)
                 self.validate(valid_steps, valid_batches, sess)
 
-    def run_epoch(self, train_steps, train_batches, train_op, sess):
+    def run_epoch(self, train_steps, train_batches, train_op, epoch, sess):
         for i in tqdm.tqdm(range(train_steps)):
             data, labels = next(train_batches)
             fd, _ = self.get_feed_dict(data, labels,
                                        self.training_config.learning_rate,
                                        self.training_config.dropout)
-            _, train_loss = sess.run([train_op, self.model.loss], feed_dict=fd)
+            _, train_loss, summary = sess.run([train_op, self.model.loss, self.merged], feed_dict=fd)
+
+            # tensorboard
+            if i % 10 == 0:
+                self.file_writer.add_summary(summary, epoch * train_steps + i)
 
     def validate(self, valid_steps, valid_batches, sess):
         y_trues, y_preds = [], []
@@ -130,7 +135,7 @@ class Trainer(object):
 
             return train_op
 
-    def add_summary(self):
-        # tensorboard stuff
+    def add_summary(self, sess):
+        # for tensorboard
         self.merged = tf.summary.merge_all()
-        self.file_writer = tf.summary.FileWriter(self.checkpoint_path, self.sess.graph)
+        self.file_writer = tf.summary.FileWriter(self.checkpoint_path, sess.graph)
