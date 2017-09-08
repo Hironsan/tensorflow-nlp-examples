@@ -8,11 +8,9 @@ from __future__ import print_function
 
 import os
 
-import numpy as np
-from tensorflow.contrib.tensorboard.plugins import projector
 import tensorflow as tf
 
-from process_data import process_data
+from word_embeddings.process_data import process_data
 
 VOCAB_SIZE = 50000
 BATCH_SIZE = 128
