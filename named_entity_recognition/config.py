@@ -17,7 +17,7 @@ class ModelConfig(object):
         # LSTM input and output dimensionality, respectively.
         self.char_embedding_size = 25
         self.num_char_lstm_units = 25
-        self.word_embedding_size = 100
+        self.word_embedding_size = 200
         self.num_word_lstm_units = 100
 
         # If < 1.0, the dropout keep probability applied to LSTM variables.
@@ -50,7 +50,7 @@ class TrainingConfig(object):
         self.lr_decay = 0.9
 
         # If not None, clip gradients to this value.
-        self.clip_value = 5.0
+        self.clip_value = 0.0
 
         # The number of max epoch size
         self.max_epoch = 15
