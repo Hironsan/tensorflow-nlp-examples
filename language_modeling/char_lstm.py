@@ -43,6 +43,7 @@ def create_model(vocab_size, embedding_dim=50):
 
     Args:
         vocab_size(int): vocabulary size.
+        embedding_dim(int): embedding dimension.
 
     Returns:
         model: model object.
@@ -76,7 +77,7 @@ def create_vocabulary(text):
     return char2id, id2char
 
 
-def generate_seq(model, char2id, id2char, seed_text, maxlen=10, iter=20):
+def generate_text(model, char2id, id2char, seed_text, maxlen=10, iter=20):
     """Generate a sequence of characters.
 
     Args:
@@ -169,7 +170,7 @@ def main():
                   optimizer='adam', metrics=['accuracy'])
     model.fit(X, y, epochs=100, verbose=2)
 
-    print(generate_seq(model, char2id, id2char, 'ちょん掛けとは、相撲'))
+    print(generate_text(model, char2id, id2char, 'ちょん掛けとは、相撲'))
 
 
 if __name__ == '__main__':
