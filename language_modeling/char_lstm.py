@@ -66,8 +66,8 @@ def create_vocabulary(text):
         char2id(dict): character to id mapping.
         id2char(dict): id to character mapping.
     """
-    char2id = {}
-    id2char = {}
+    char2id = {'<PAD>': 0}
+    id2char = {0: '<PAD>'}
     freq = Counter(text)
     for char, _ in freq.most_common():
         id = len(char2id)
