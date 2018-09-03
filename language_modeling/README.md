@@ -20,8 +20,9 @@ File         | What's in it?
 The data required for this tutorial is in the data/ directory of the [PTB dataset from Tomas Mikolov's webpage](http://www.fit.vutbr.cz/~imikolov/rnnlm/simple-examples.tgz).
 
 ```bash
-$ wget http://www.fit.vutbr.cz/~imikolov/rnnlm/simple-examples.tgz -P data/
-$ unzip simple-examples.tgz -d data
+$ wget http://www.fit.vutbr.cz/~imikolov/rnnlm/simple-examples.tgz
+$ tar xvfz simple-examples.tgz -C data/
+$ rm simple-examples.tgz
 ```
 
 The dataset is already preprocessed and contains overall 10000 different words, including the end-of-sentence marker and a special symbol (\<unk\>) for rare words. In reader.py, we convert each word to a unique integer identifier, in order to make it easy for the neural network to process the data.
