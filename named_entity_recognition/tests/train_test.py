@@ -3,11 +3,11 @@ import unittest
 
 import numpy as np
 
-from ..config import ModelConfig, TrainingConfig
-from ..train import Trainer
-from ..data_loader import load_data_and_labels, load_word_embeddings, batch_iter
-from ..preprocess import prepare_preprocessor
-from ..model import NERModel
+from named_entity_recognition.bilstm_crf.config import ModelConfig, TrainingConfig
+from named_entity_recognition.bilstm_crf.train import Trainer
+from named_entity_recognition.bilstm_crf.data_loader import load_data_and_labels, load_word_embeddings, batch_iter
+from named_entity_recognition.bilstm_crf.preprocess import prepare_preprocessor
+from named_entity_recognition.bilstm_crf.model import NERModel
 
 
 class TestTrainer(unittest.TestCase):
